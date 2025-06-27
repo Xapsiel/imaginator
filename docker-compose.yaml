@@ -1,20 +1,38 @@
 services:
   postgres:
     image: postgres:latest
-    container_name: neuru
+    container_name: neuro
     environment:
       POSTGRES_PASSWORD: postgres
       POSTGRES_USER: postgres
       POSTGRES_DB: neuro
     ports:
-      - "5432:5432"
+      - "5435:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    networks:
+      - app-network
     restart: unless-stopped
     healthcheck:
       test: [ "CMD","pg_isready","-U","postgres" ]
       interval: 10s
       retries: 5
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: go-bot
+    depends_on:
+      - postgres
+    networks:
+      - app-network
+    volumes:
+      - ./configs:/app/configs
+
+    command: [ "./main", "-c", "./configs/config.yaml"]
 
 volumes:
   postgres_data:
+networks:
+  app-network:
+    driver: bridge
